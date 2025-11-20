@@ -1,0 +1,209 @@
+:root {
+    font-size: 10px;
+    /* Fondo principal (body) */
+    --bg-body: #F8FAFC;
+    /* gris casi blanco, muy limpio */
+
+    /* Fondo del layout (el naranja que tenías, pero más suave) */
+    --bg-layout: #FFF4E6;
+    /* naranja melocotón súper suave */
+
+    /* Tarjeta principal */
+    --bg-container: #FFFFFF;
+    /* blanco puro para máxima limpieza */
+
+    /* Texto principal */
+    --text-primary: #1E293B;
+    /* gris pizarra oscuro (casi negro pero elegante) */
+    --text-secondary: #475569;
+    /* gris medio para subtítulos */
+
+    /* Color de acento / botón principal */
+    --accent: #3B82F6;
+    /* azul moderno tipo Tailwind blue-500 */
+    --accent-hover: #2563EB;
+    /* azul más intenso en hover */
+    --accent-light: #DBEAFE;
+    /* azul muy claro para fondos sutiles si quieres */
+}
+
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    font-size: 1.7rem;
+    font-family: 'Courier New', Courier, monospace;
+    background-color: var(--bg-body);
+}
+
+.layout {
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-layout);
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.layout__container {
+    width: 58rem;
+    min-height: 45rem;
+    padding: 3rem;
+    background-color: var(--bg-container);
+    color: var(--text-primary);
+    border: none;
+    outline: none;
+    border-radius: 1rem;
+    box-shadow: 0 0 8px #c7c4c4;
+    text-align: center;
+}
+
+.container__header {
+    margin-left: 6rem;
+    display: flex;
+    flex-direction: row;
+    gap: 2rem;
+}
+
+.header__img {
+    max-width: 45px;
+    max-height: 45px;
+}
+
+.header__title {
+    font-size: 4rem;
+    font-weight: 600;
+    word-spacing: -0.5rem;
+    margin-left: -0.5rem;
+    margin-bottom: 2rem;
+    color: var(--text-primary);
+}
+
+.container__avatar {
+    width: 25rem;
+    height: 25rem;
+    margin: auto;
+    margin-bottom: 3rem;
+    background-color: var(--accent-light);
+    border: none;
+    outline: none;
+    border-radius: 100%;
+    overflow: hidden;
+
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading {
+    text-align: center;
+}
+
+.container__avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.container__inputs {
+    min-width: 100%;
+    font-size: 2.5rem;
+    font-weight: 500;
+
+    display: flex;
+    flex-direction: row;
+    gap: 2rem;
+}
+
+.category {
+    flex: 5;
+    background-color: var(--bg-container);
+    padding: 1.3rem;
+    border: none;
+    box-shadow: 0 0 6px #b1b1b1;
+    outline: none;
+    cursor: pointer;
+    border-radius: 0.4rem;
+}
+
+.button {
+    flex: 3;
+    background-color: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 0.4rem;
+    outline: none;
+    cursor: pointer;
+    transition: all 350ms ease-out;
+}
+
+.button:hover {
+    background-color: var(--accent-hover);
+}
+
+/* Tablets y pantallas menores a 768px */
+@media (max-width: 768px) {
+    .layout__container {
+        width: 90%;
+        max-width: 52rem;
+    }
+
+    .container__header {
+        margin-left: 0;
+        justify-content: center;
+    }
+
+    .container__inputs {
+        flex-direction: column;
+    }
+
+    .category,
+    .button {
+        flex: none;
+    }
+}
+
+/* Móviles grandes - hasta 480px */
+@media (max-width: 480px) {
+    .layout__container {
+        width: 95%;
+        padding: 3rem 2rem;
+    }
+
+    .header__title {
+        font-size: 3.4rem;
+    }
+
+    .container__avatar {
+        width: 22rem;
+        height: 22rem;
+    }
+}
+
+/* Móviles pequeños - hasta 360px */
+@media (max-width: 360px) {
+    .layout__container {
+        padding: 3rem 1.5rem;
+    }
+
+    .header__title {
+        font-size: 3.2rem;
+    }
+
+    .container__avatar {
+        width: 20rem;
+        height: 20rem;
+    }
+
+    .container__inputs {
+        gap: 1.5rem;
+    }
+}
