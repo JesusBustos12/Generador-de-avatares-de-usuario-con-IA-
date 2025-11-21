@@ -2,6 +2,7 @@
 import axios from "axios";
 import express from "express";
 import dotenv from "dotenv";
+import path from "path"; // 🛠️ AGREGADO: Importar el módulo 'path'
 
 //Integridad de las variables de entorno:
 dotenv.config();
@@ -11,7 +12,8 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 //Servir el front-end:
-app.use("/", express.static("public"));
+// 🛠️ CORRECCIÓN: Usar path.join() para una ruta absoluta y robusta en Vercel.
+app.use("/", express.static(path.join(path.resolve(), "public")));
 
 //Middleware:
 app.use(express.json());
@@ -58,15 +60,15 @@ app.post("/api/gen-img", async(req, res) => {
         });
 
     }catch(exception){
+        console.error("Error en la solicitud a la API de OpenAI:", exception.response ? exception.response.data : exception.message);
         return res.status(500).json({
-            exception: "Error con el servidor."
+            exception: "Error con el servidor al generar la imagen."
         });
     }
 
 });
 
 app.listen(port, () => {
-    console.log(`Tu servidor esta iniciando en: http://localhost${port}`);
+    console.log(`Tu servidor esta iniciando en: http://localhost:${port}`);
 });
-
 
