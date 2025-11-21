@@ -57,8 +57,7 @@ Despliegue listo para producción
 Aprendo rápido, entrego productos funcionales y visualmente atractivos en poco tiempo
 
 ## Demo en vivo:
-(En cuanto lo despliegue subiré el enlace aquí)
-Mientras tanto puedes clonar el repo, poner tu OPENAI_API_KEY en .env y ejecutarlo localmente en minutos.
+https://generador-de-avatares-de-usuario-co.vercel.app/
 
 ## Ejemplos de uso:
 Selecciona "Mujer" → Generar → Avatar en estilo Anime/Cartoon
@@ -84,4 +83,5 @@ GitHub: github.com/JesusBustos12
 LinkedIn: linkedin.com/in/jesus-bustos-arizmendi-325329283
 Correo: jesusbustosarizmendi0@gmail.com
 Celular/WhatsApp: +52 762 119 2732
+
 ¡Gracias por ver mi trabajo! 🚀
