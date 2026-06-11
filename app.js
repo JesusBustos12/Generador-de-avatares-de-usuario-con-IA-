@@ -87,7 +87,7 @@ app.post("/api/gen-img", limiter, async(req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`Tu servidor esta iniciando en: http://localhost${port}`);
+    console.log(`Tu servidor esta iniciando en: http://localhost:${port}`);
 });
 
 
