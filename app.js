@@ -5,6 +5,11 @@ import dotenv from "dotenv";
 import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 //Integridad de las variables de entorno:
 dotenv.config();
@@ -24,8 +29,8 @@ const limiter = rateLimit({
     message: { error: "Has alcanzado el límite máximo de 3 avatares por dispositivo." }
 });
 
-//Servir el front-end:
-app.use("/", express.static("public"));
+//Servir el front-end usando ruta absoluta:
+app.use("/", express.static(path.join(__dirname, "public")));
 
 //Middleware:
 app.use(express.json());
