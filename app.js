@@ -63,12 +63,12 @@ app.post("/api/gen-img", limiter, async(req, res) => {
     `;
 
     try{
-        // Usamos DALL-E 2 porque la API Key actual no tiene permisos para DALL-E 3
+        // Usamos DALL-E 3 para resultados de máxima calidad Premium
         const endPoint = await axios.post("https://api.openai.com/v1/images/generations", {
-            model: "dall-e-2",
+            model: "dall-e-3",
             prompt: context,
             n: 1,
-            size: "512x512" // Tamaño optimizado para DALL-E 2
+            size: "1024x1024" // DALL-E 3 requiere min 1024x1024
         }, {
             headers: {
                 "Content-Type": "application/json",
