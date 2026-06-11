@@ -2,6 +2,9 @@
 import axios from "axios";
 import express from "express";
 import dotenv from "dotenv";
+import helmet from "helmet";
+import cors from "cors";
+import rateLimit from "express-rate-limit";
 
 //Integridad de las variables de entorno:
 dotenv.config();
@@ -9,6 +12,17 @@ dotenv.config();
 //Configurar el servidor:
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Configurar Seguridad (Base de datos en memoria)
+app.use(helmet());
+app.use(cors());
+
+// Limitar peticiones a 3 por IP para proteger la API Key
+const limiter = rateLimit({
+    windowMs: 24 * 60 * 60 * 1000, // 24 horas
+    max: 3, // Limite de 3 peticiones por IP
+    message: { error: "Has alcanzado el límite máximo de 3 avatares por dispositivo." }
+});
 
 //Servir el front-end:
 app.use("/", express.static("public"));
@@ -20,30 +34,36 @@ app.use(express.urlencoded({
 }));
 
 //Peticion post:
-app.post("/api/gen-img", async(req, res) => {
+//Peticion post protegida con rate limit en memoria
+app.post("/api/gen-img", limiter, async(req, res) => {
 
     const apiKey = process.env.OPENAI_API_KEY;
-
     const {category} = req.body;
 
+    // Validación estricta de inputs por seguridad
+    const validCategories = ["hombre", "mujer", "niño", "anciano", "animal"];
+    if (!validCategories.includes(category?.toLowerCase())) {
+        return res.status(400).json({ error: "Categoría no válida." });
+    }
+
     const context = `
-        Heres un experto en dibujo y diseño de retratos y caricaturas.
-        Tu deber es realizar imagenes para el avatar del ${category}.
-            Especificasiones:
-                - dimenciones del avatar: 256x256 pixeles.
-                - Forma de la imagen: Rectangular o cuadrada.
-                - Tematicas o estilos del ${category}: "Anime", "dibujos de los 80", "Cartoon", "Comics de super heroes".
-                - Importante: Solo quiero retratos o caricaturas del ${category} con los estilos antes mencionados. Ademas de no sobreponer imagenes por en-sima de la otra.
-        Si no sigues todas las especificasiones al momento de realizar el avatar de ${category}. Seras despedido de la empresa como castigo 😡.
+        Eres un experto profesional en ilustración digital, diseño de retratos y caricaturas.
+        Tu deber es crear un avatar impresionante de un/una ${category}.
+        
+        Especificaciones obligatorias:
+        - Estilos permitidos: "Anime de alta calidad", "Retrato digital moderno", "Estilo Cartoon Premium", o "Arte Conceptual de Videojuegos".
+        - El avatar debe ser un retrato centrado en el rostro y hombros.
+        - Composición limpia, colores vibrantes y acabado hiper-detallado.
+        - Importante: No sobreponer texto ni otras imágenes. Solo un personaje principal con fondo sutil.
     `;
 
     try{
-
+        // Actualizado a DALL-E 3 para resultados Premium
         const endPoint = await axios.post("https://api.openai.com/v1/images/generations", {
-            model: "dall-e-2",
+            model: "dall-e-3",
             prompt: context,
             n: 1,
-            size: "256x256"
+            size: "1024x1024" // DALL-E 3 requiere min 1024x1024
         }, {
             headers: {
                 "Content-Type": "application/json",
@@ -58,8 +78,9 @@ app.post("/api/gen-img", async(req, res) => {
         });
 
     }catch(exception){
+        console.error("Error OpenAI:", exception.response ? exception.response.data : exception.message);
         return res.status(500).json({
-            exception: "Error con el servidor."
+            error: "Error al generar la imagen. Por favor intenta de nuevo más tarde."
         });
     }
 

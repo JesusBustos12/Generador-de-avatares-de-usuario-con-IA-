@@ -2,73 +2,106 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Selección de los elementos principales del DOM
     const containerAvatar = document.querySelector(".container__avatar");
-    const loading = document.querySelector(".loading");
-    const selectCategory = document.querySelector(".category");
-    const button = document.querySelector(".button");
+    const initialState = document.querySelector(".initial-state");
+    const loadingOverlay = document.querySelector(".loading-overlay");
+    const selectCategory = document.querySelector("#category-select");
+    const button = document.querySelector("#generate-btn");
+    
+    // UI del límite
+    const limitCounterEl = document.querySelector("#limit-counter");
+    const progressFill = document.querySelector("#progress-fill");
 
-    // Ocultar el mensaje “Cargando...” al cargar la página
-    loading.style.display = "none";
+    const MAX_GENERATIONS = 3;
 
+    // Función para actualizar la UI del límite
+    const updateLimitUI = () => {
+        let genCount = parseInt(localStorage.getItem('avatarGenCount') || '0');
+        let remaining = Math.max(0, MAX_GENERATIONS - genCount);
+        
+        limitCounterEl.textContent = remaining;
+        
+        // Calcular porcentaje para la barra (100% = 3 restantes, 0% = 0 restantes)
+        const percentage = (remaining / MAX_GENERATIONS) * 100;
+        progressFill.style.width = `${percentage}%`;
+
+        // Si se alcanzó el límite
+        if (remaining === 0) {
+            button.disabled = true;
+            button.innerHTML = `
+                <span>Límite Alcanzado</span>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-lock"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            `;
+            // Cambiar la barra a color gris
+            progressFill.style.background = "#52525b"; 
+            return true;
+        }
+        return false;
+    };
+
+    // Inicializar la UI al cargar
+    updateLimitUI();
 
     const genIa = async () => {
-
-        // Recuperar cuántas imágenes ha generado este navegador
-        let genCount = parseInt(localStorage.getItem('avatarGenCount') || '0');
-
-        // Límite de 4 generaciones gratuitas por usuario (protege la clave de OpenAI)
-        if (genCount >= 4) {
-            loading.style.display = "none";
-            alert("Has alcanzado el límite de 4 avatares gratis. Gracias por probar la demo!");
+        // Verificar límite de nuevo por seguridad
+        if (updateLimitUI()) {
+            alert("Has alcanzado el límite de avatares diarios para este dispositivo.");
             return;
         }
 
-        // Limpiar imagen anterior y mostrar “Cargando…” apenas se pulsa el botón
-        containerAvatar.innerHTML = `<span class="loading">Cargando...</span>`;
-        loading.style.display = "block";
+        // Mostrar loading
+        loadingOverlay.style.display = "flex";
+        if (initialState) initialState.style.display = "none";
 
-        // Tomar la categoría seleccionada por el usuario
+        // Quitar imagen generada anterior si existe
+        const oldImage = containerAvatar.querySelector('.generated');
+        if (oldImage) oldImage.remove();
+
         const category = selectCategory.value;
 
         try {
-            // Petición al backend usando ruta relativa (funciona local y en producción)
+            // Petición al backend
             const response = await fetch("/api/gen-img", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({
-                    category
-                })
+                body: JSON.stringify({ category })
             });
 
             const data = await response.json();
 
-            // Si llega la URL de la imagen, se inserta en el contenedor
-            if (data && data.image) {
-                containerAvatar.innerHTML = `<img src="${data.image}"/>`;
+            if (response.ok && data.image) {
+                // Inyectar imagen
+                const imgElement = document.createElement("img");
+                imgElement.src = data.image;
+                imgElement.className = "generated";
+                imgElement.alt = `Avatar IA de ${category}`;
+                containerAvatar.appendChild(imgElement);
 
-                // Incrementar contador y guardar en localStorage
-                genCount++;
-                localStorage.setItem('avatarGenCount', genCount);
+                // Incrementar contador local
+                let genCount = parseInt(localStorage.getItem('avatarGenCount') || '0');
+                localStorage.setItem('avatarGenCount', genCount + 1);
+                
+                // Actualizar gráfica
+                updateLimitUI();
 
             } else {
-                // Mostrar mensaje de error dentro del círculo para mantener consistencia visual
-                containerAvatar.innerHTML = `<span class="loading">Error al generar</span>`;
-                alert(data.error || data.exception || "No se generó la imagen.");
+                // Error de Backend (ej. rate limit por IP o OpenAI error)
+                alert(data.error || "No se pudo generar la imagen. Intenta más tarde.");
+                if (initialState) initialState.style.display = "flex";
             }
 
         } catch (exception) {
-            // Manejo de errores de red o servidor
-            console.log(exception);
-            containerAvatar.innerHTML = `<span class="loading">Error de conexión</span>`;
-            alert("Error de conexión. Intenta de nuevo.");
+            console.error(exception);
+            alert("Error de conexión con el servidor.");
+            if (initialState) initialState.style.display = "flex";
         } finally {
-            // Siempre ocultar el loading una vez terminada la operación
-            loading.style.display = "none";
+            // Ocultar loading
+            loadingOverlay.style.display = "none";
         }
     }
 
-    // Asignar la función al botón de generar
+    // Asignar evento click
     button.addEventListener("click", genIa);
 
 });
