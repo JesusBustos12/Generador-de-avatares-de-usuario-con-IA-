@@ -18,6 +18,9 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Habilitar trust proxy para que funcione correctamente en Vercel
+app.set('trust proxy', 1);
+
 // Configurar Seguridad (Base de datos en memoria)
 app.use(helmet());
 app.use(cors());
@@ -63,12 +66,12 @@ app.post("/api/gen-img", limiter, async(req, res) => {
     `;
 
     try{
-        // Usamos DALL-E 2 porque la cuenta de OpenAI aún no activa DALL-E 3
+        // Usamos gpt-image-1 (el modelo actual de OpenAI para imágenes)
         const endPoint = await axios.post("https://api.openai.com/v1/images/generations", {
-            model: "dall-e-2",
+            model: "gpt-image-1",
             prompt: context,
             n: 1,
-            size: "512x512" // DALL-E 2 funciona perfectamente con 512x512
+            size: "1024x1024"
         }, {
             headers: {
                 "Content-Type": "application/json",
@@ -76,7 +79,9 @@ app.post("/api/gen-img", limiter, async(req, res) => {
             }
         });
 
-        const imageUrl = endPoint.data.data[0].url;
+        // gpt-image-1 devuelve base64 por defecto
+        const imageData = endPoint.data.data[0];
+        const imageUrl = imageData.url || `data:image/png;base64,${imageData.b64_json}`;
 
         return res.status(200).json({
             image: imageUrl
