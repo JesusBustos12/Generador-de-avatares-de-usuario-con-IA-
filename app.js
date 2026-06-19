@@ -114,7 +114,8 @@ app.post("/api/gen-img", limiter, async(req, res) => {
             model: "gpt-image-1",
             prompt: context,
             n: 1,
-            size: "1024x1024"
+            size: "1024x1024",
+            response_format: "b64_json"
         }, {
             headers: {
                 "Content-Type": "application/json",

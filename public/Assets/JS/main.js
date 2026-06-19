@@ -6,6 +6,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const loadingOverlay = document.querySelector(".loading-overlay");
     const selectCategory = document.querySelector("#category-select");
     const button = document.querySelector("#generate-btn");
+    const downloadBtn = document.querySelector("#download-btn");
     
     // UI del límite
     const limitCounterEl = document.querySelector("#limit-counter");
@@ -57,6 +58,9 @@ window.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        // Ocultar botón de descarga al iniciar nueva generación
+        if (downloadBtn) downloadBtn.style.display = "none";
+
         // Mostrar loading
         loadingOverlay.style.display = "flex";
         if (initialState) initialState.style.display = "none";
@@ -86,6 +90,27 @@ window.addEventListener("DOMContentLoaded", () => {
                 imgElement.className = "generated";
                 imgElement.alt = `Avatar IA de ${category}`;
                 containerAvatar.appendChild(imgElement);
+
+                // Mostrar botón de descarga y asignar evento
+                if (downloadBtn) {
+                    downloadBtn.style.display = "flex";
+                    downloadBtn.onclick = async () => {
+                        try {
+                            const response = await fetch(data.image);
+                            const blob = await response.blob();
+                            const link = document.createElement("a");
+                            link.href = URL.createObjectURL(blob);
+                            link.download = `avatar-${category}-${Date.now()}.png`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(link.href);
+                        } catch (error) {
+                            console.error("Error al descargar:", error);
+                            alert("Hubo un error al intentar descargar la imagen.");
+                        }
+                    };
+                }
 
                 // Incrementar contador local y actualizar gráfica
                 await updateLimitUI();
