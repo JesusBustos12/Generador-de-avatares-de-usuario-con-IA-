@@ -7,12 +7,22 @@ import cors from "cors";
 import rateLimit from "express-rate-limit";
 import path from "path";
 import { fileURLToPath } from "url";
+import mysql from "mysql2/promise";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 //Integridad de las variables de entorno:
 dotenv.config();
+
+//Configurar base de datos TiDB:
+const pool = mysql.createPool({
+    uri: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: true
+    }
+});
+const MAX_GENERATIONS = 3;
 
 //Configurar el servidor:
 const app = express();
@@ -41,17 +51,50 @@ app.use(express.urlencoded({
     extended: true
 }));
 
+// Endpoint para consultar el estado del límite
+app.get("/api/limit-status", async (req, res) => {
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    try {
+        const [rows] = await pool.query('SELECT generation_count FROM user_generations WHERE ip_address = ?', [ip]);
+        let count = 0;
+        if (rows.length > 0) {
+            count = rows[0].generation_count;
+        }
+        res.json({ remaining: Math.max(0, MAX_GENERATIONS - count), max: MAX_GENERATIONS });
+    } catch (error) {
+        console.error("Database error:", error);
+        res.status(500).json({ error: "Error interno del servidor al consultar límites" });
+    }
+});
+
 //Peticion post:
 //Peticion post protegida con rate limit en memoria
 app.post("/api/gen-img", limiter, async(req, res) => {
 
     const apiKey = process.env.OPENAI_API_KEY;
     const {category} = req.body;
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
     // Validación estricta de inputs por seguridad
     const validCategories = ["hombre", "mujer", "niño", "anciano", "animal"];
     if (!validCategories.includes(category?.toLowerCase())) {
         return res.status(400).json({ error: "Categoría no válida." });
+    }
+
+    try {
+        // Verificar limite en la base de datos
+        const [rows] = await pool.query('SELECT generation_count FROM user_generations WHERE ip_address = ?', [ip]);
+        let currentCount = 0;
+        if (rows.length > 0) {
+            currentCount = rows[0].generation_count;
+        }
+
+        if (currentCount >= MAX_GENERATIONS) {
+            return res.status(403).json({ error: "Has alcanzado el límite máximo de 3 avatares por dispositivo." });
+        }
+    } catch (dbError) {
+        console.error("Error al consultar TiDB:", dbError);
+        return res.status(500).json({ error: "Error interno del servidor al verificar límites." });
     }
 
     const context = `
@@ -82,6 +125,17 @@ app.post("/api/gen-img", limiter, async(req, res) => {
         // gpt-image-1 devuelve base64 por defecto
         const imageData = endPoint.data.data[0];
         const imageUrl = imageData.url || `data:image/png;base64,${imageData.b64_json}`;
+
+        try {
+            // Incrementar contador en TiDB
+            await pool.query(`
+                INSERT INTO user_generations (ip_address, generation_count) 
+                VALUES (?, 1) 
+                ON DUPLICATE KEY UPDATE generation_count = generation_count + 1
+            `, [ip]);
+        } catch (dbError) {
+            console.error("Error al actualizar limite en TiDB:", dbError);
+        }
 
         return res.status(200).json({
             image: imageUrl

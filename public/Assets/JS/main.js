@@ -13,27 +13,35 @@ window.addEventListener("DOMContentLoaded", () => {
 
     const MAX_GENERATIONS = 3;
 
-    // Función para actualizar la UI del límite
-    const updateLimitUI = () => {
-        let genCount = parseInt(localStorage.getItem('avatarGenCount') || '0');
-        let remaining = Math.max(0, MAX_GENERATIONS - genCount);
-        
-        limitCounterEl.textContent = remaining;
-        
-        // Calcular porcentaje para la barra (100% = 3 restantes, 0% = 0 restantes)
-        const percentage = (remaining / MAX_GENERATIONS) * 100;
-        progressFill.style.width = `${percentage}%`;
+    // Función para actualizar la UI del límite consultando al servidor
+    const updateLimitUI = async () => {
+        try {
+            const response = await fetch('/api/limit-status');
+            if (response.ok) {
+                const data = await response.json();
+                const remaining = data.remaining;
+                
+                limitCounterEl.textContent = remaining;
+                
+                // Calcular porcentaje para la barra (100% = 3 restantes, 0% = 0 restantes)
+                const percentage = (remaining / MAX_GENERATIONS) * 100;
+                progressFill.style.width = `${percentage}%`;
 
-        // Si se alcanzó el límite
-        if (remaining === 0) {
-            button.disabled = true;
-            button.innerHTML = `
-                <span>Límite Alcanzado</span>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-lock"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-            `;
-            // Cambiar la barra a color gris
-            progressFill.style.background = "#52525b"; 
-            return true;
+                // Si se alcanzó el límite
+                if (remaining === 0) {
+                    button.disabled = true;
+                    button.innerHTML = `
+                        <span>Límite Alcanzado</span>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-lock"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    `;
+                    // Cambiar la barra a color gris
+                    progressFill.style.background = "#52525b"; 
+                    return true;
+                }
+                return false;
+            }
+        } catch (error) {
+            console.error("Error al obtener el límite:", error);
         }
         return false;
     };
@@ -42,9 +50,10 @@ window.addEventListener("DOMContentLoaded", () => {
     updateLimitUI();
 
     const genIa = async () => {
-        // Verificar límite de nuevo por seguridad
-        if (updateLimitUI()) {
-            alert("Has alcanzado el límite de avatares diarios para este dispositivo.");
+        // Verificar límite de nuevo por seguridad localmente visual (el backend lo verificará de todas formas)
+        const isLimitReached = await updateLimitUI();
+        if (isLimitReached) {
+            alert("Has alcanzado el límite de avatares para este dispositivo.");
             return;
         }
 
@@ -78,12 +87,8 @@ window.addEventListener("DOMContentLoaded", () => {
                 imgElement.alt = `Avatar IA de ${category}`;
                 containerAvatar.appendChild(imgElement);
 
-                // Incrementar contador local
-                let genCount = parseInt(localStorage.getItem('avatarGenCount') || '0');
-                localStorage.setItem('avatarGenCount', genCount + 1);
-                
-                // Actualizar gráfica
-                updateLimitUI();
+                // Incrementar contador local y actualizar gráfica
+                await updateLimitUI();
 
             } else {
                 // Error de Backend (ej. rate limit por IP o OpenAI error)
