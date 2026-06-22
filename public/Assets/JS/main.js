@@ -12,7 +12,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const limitCounterEl = document.querySelector("#limit-counter");
     const progressFill = document.querySelector("#progress-fill");
 
-    const MAX_GENERATIONS = 3;
+    const MAX_GENERATIONS = 5;
 
     // Función para actualizar la UI del límite consultando al servidor
     const updateLimitUI = async () => {

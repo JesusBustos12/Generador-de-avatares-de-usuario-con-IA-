@@ -19,7 +19,7 @@ async function testOpenAI() {
     try {
         console.log("Haciendo petición a OpenAI...");
         const endPoint = await axios.post("https://api.openai.com/v1/images/generations", {
-            model: "dall-e-3",
+            model: "gpt-image-1.5",
             prompt: context,
             n: 1,
             size: "1024x1024"

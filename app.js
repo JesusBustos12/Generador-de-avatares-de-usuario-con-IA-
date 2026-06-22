@@ -22,7 +22,7 @@ const pool = mysql.createPool({
         rejectUnauthorized: true
     }
 });
-const MAX_GENERATIONS = 3;
+const MAX_GENERATIONS = 5;
 
 //Configurar el servidor:
 const app = express();
@@ -38,8 +38,8 @@ app.use(cors());
 // Limitar peticiones a 3 por IP para proteger la API Key
 const limiter = rateLimit({
     windowMs: 24 * 60 * 60 * 1000, // 24 horas
-    max: 3, // Limite de 3 peticiones por IP
-    message: { error: "Has alcanzado el límite máximo de 3 avatares por dispositivo." }
+    max: 5, // Limite de 5 peticiones por IP
+    message: { error: "Has alcanzado el límite máximo de 5 avatares por dispositivo." }
 });
 
 //Servir el front-end usando ruta absoluta:
@@ -132,7 +132,7 @@ app.post("/api/gen-img", limiter, async(req, res) => {
         }
 
         if (currentCount >= MAX_GENERATIONS) {
-            return res.status(403).json({ error: "Has alcanzado el límite máximo de 3 avatares por dispositivo." });
+            return res.status(403).json({ error: "Has alcanzado el límite máximo de 5 avatares por dispositivo." });
         }
     } catch (dbError) {
         console.error("Error al consultar TiDB:", dbError);
@@ -151,9 +151,9 @@ app.post("/api/gen-img", limiter, async(req, res) => {
     `;
 
     try{
-        // Usamos gpt-image-1 (el modelo actual de OpenAI para imágenes)
+        // Usamos gpt-image-1-mini (el modelo económico actual de OpenAI para imágenes)
         const endPoint = await axios.post("https://api.openai.com/v1/images/generations", {
-            model: "dall-e-2",
+            model: "gpt-image-1-mini",
             prompt: context,
             n: 1,
             size: "1024x1024"
