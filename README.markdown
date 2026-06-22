@@ -11,12 +11,12 @@ Aplicación web full-stack diseñada para la generación instantánea de avatare
 - **Seguridad:** `helmet`, `cors`, `express-rate-limit`, `dotenv`
 
 ## Características Principales
-- **Generación de Imágenes de Alta Calidad:** Conexión directa a OpenAI para obtener resultados con estilos premium (Anime de alta calidad, Retrato digital moderno, Arte Conceptual).
-- **Control de Acceso y Rate Limiting Seguro:** Implementación de una arquitectura de seguridad por IP alojada en base de datos. Mitiga vulnerabilidades de tipo "Clear Data" en el navegador para garantizar que las cuotas de generación (3 peticiones por dispositivo) sean controladas y respetadas a nivel backend. 
-- **Restablecimiento Automático:** Lógica temporal en base de datos que reabastece las peticiones del usuario de forma transparente tras 24 horas.
-- **Optimización SEO:** El proyecto incluye metaetiquetas avanzadas, etiquetas Open Graph (`og:`) para previsualizaciones en redes sociales, y un esquema de HTML5 semántico (`<main>`, `<section>`, etc.) para un indexado óptimo.
-- **Interfaz de Usuario y UX:** Diseño moderno, minimalista, y completamente responsivo. Implementa feedback visual, descargas automáticas y animaciones de progreso consultadas de manera síncrona con la base de datos.
-- **Validaciones Estrictas:** Validaciones a nivel servidor y cliente para asegurar un uso estructurado del API y evitar inyecciones maliciosas.
+- **Generador de Variabilidad Orgánica:** El backend incluye un motor de "Prompt Engineering" que inyecta aleatoriamente cientos de combinaciones posibles de rasgos físicos (cabello, ojos, piel, expresiones, géneros y razas de animales) por debajo de la mesa. Esto asegura que la IA devuelva un personaje 100% distinto y único cada vez, mitigando por completo la repetición o "sesgo de default".
+- **Generación de Alta Fidelidad Eficiente:** Conectado al moderno modelo `gpt-image-1-mini` de OpenAI, equilibrando magistralmente una calidad gráfica premium ("Anime", "Arte Conceptual") con un costo fraccionario por imagen, haciéndolo viable para producción escalable.
+- **Control de Acceso y Rate Limiting en DB:** Arquitectura de seguridad por IP alojada en TiDB. Bloquea vulnerabilidades de alteración de "Clear Data" del navegador, garantizando que el límite de 5 avatares por dispositivo sea impenetrable desde el frontend.
+- **Restablecimiento Automático Temporizado:** Lógica matemática en el servidor que reabastece silenciosamente las 5 peticiones del usuario exactamente al cumplirse 24 horas de inactividad, en perfecta sincronía.
+- **Optimización SEO:** El proyecto incluye metaetiquetas avanzadas, etiquetas Open Graph (`og:`) para previsualizaciones en redes sociales, y un esquema HTML5 semántico.
+- **Experiencia de Usuario (UX) Premium:** UI inmersiva con tema oscuro y acentos neón, barra dinámica de cupo, descargas instantáneas ultra-rápidas extrayendo Base64 directo a DOM (bypassing CSP restrictions), y notificaciones flotantes animadas (Toast).
 
 ## Estructura del Proyecto
 text
