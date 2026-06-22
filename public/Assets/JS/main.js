@@ -47,8 +47,30 @@ window.addEventListener("DOMContentLoaded", () => {
         return false;
     };
 
-    // Inicializar la UI al cargar
-    updateLimitUI();
+    // Función para migrar datos locales antiguos al servidor
+    const migrateLocalStorage = async () => {
+        const localCount = localStorage.getItem('avatarGenCount');
+        if (localCount) {
+            try {
+                const response = await fetch('/api/migrate-local-storage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ count: localCount })
+                });
+                if (response.ok) {
+                    localStorage.removeItem('avatarGenCount');
+                    console.log('Migración de localStorage a TiDB completada.');
+                }
+            } catch (err) {
+                console.error("Error al migrar localStorage:", err);
+            }
+        }
+    };
+
+    // Inicializar la UI al cargar y migrar datos locales si existen
+    migrateLocalStorage().then(() => {
+        updateLimitUI();
+    });
 
     const genIa = async () => {
         // Verificar límite de nuevo por seguridad localmente visual (el backend lo verificará de todas formas)

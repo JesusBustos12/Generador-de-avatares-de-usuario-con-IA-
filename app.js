@@ -51,14 +51,45 @@ app.use(express.urlencoded({
     extended: true
 }));
 
+// Endpoint para migrar localStorage a TiDB
+app.post("/api/migrate-local-storage", async (req, res) => {
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const { count } = req.body;
+    
+    if (count !== undefined && !isNaN(parseInt(count))) {
+        try {
+            await pool.query(`
+                INSERT INTO user_generations (ip_address, generation_count) 
+                VALUES (?, ?) 
+                ON DUPLICATE KEY UPDATE generation_count = GREATEST(generation_count, ?)
+            `, [ip, parseInt(count), parseInt(count)]);
+            res.json({ success: true });
+        } catch (error) {
+            console.error("Error migrating local storage:", error);
+            res.status(500).json({ error: "Error interno al migrar" });
+        }
+    } else {
+        res.status(400).json({ error: "Conteo inválido" });
+    }
+});
+
 // Endpoint para consultar el estado del límite
 app.get("/api/limit-status", async (req, res) => {
     const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     try {
-        const [rows] = await pool.query('SELECT generation_count FROM user_generations WHERE ip_address = ?', [ip]);
+        const [rows] = await pool.query('SELECT generation_count, updated_at FROM user_generations WHERE ip_address = ?', [ip]);
         let count = 0;
         if (rows.length > 0) {
-            count = rows[0].generation_count;
+            const lastUpdated = new Date(rows[0].updated_at);
+            const now = new Date();
+            const hoursDiff = Math.abs(now - lastUpdated) / 36e5; // Diferencia en horas
+            
+            if (hoursDiff >= 24) {
+                // Han pasado 24 horas desde la última generación, se reinicia virtualmente
+                count = 0;
+            } else {
+                count = rows[0].generation_count;
+            }
         }
         res.json({ remaining: Math.max(0, MAX_GENERATIONS - count), max: MAX_GENERATIONS });
     } catch (error) {
@@ -81,12 +112,23 @@ app.post("/api/gen-img", limiter, async(req, res) => {
         return res.status(400).json({ error: "Categoría no válida." });
     }
 
+    let shouldReset = false;
     try {
         // Verificar limite en la base de datos
-        const [rows] = await pool.query('SELECT generation_count FROM user_generations WHERE ip_address = ?', [ip]);
+        const [rows] = await pool.query('SELECT generation_count, updated_at FROM user_generations WHERE ip_address = ?', [ip]);
         let currentCount = 0;
+        
         if (rows.length > 0) {
-            currentCount = rows[0].generation_count;
+            const lastUpdated = new Date(rows[0].updated_at);
+            const now = new Date();
+            const hoursDiff = Math.abs(now - lastUpdated) / 36e5;
+            
+            if (hoursDiff >= 24) {
+                currentCount = 0;
+                shouldReset = true;
+            } else {
+                currentCount = rows[0].generation_count;
+            }
         }
 
         if (currentCount >= MAX_GENERATIONS) {
@@ -128,12 +170,21 @@ app.post("/api/gen-img", limiter, async(req, res) => {
         const imageUrl = imageData.url || `data:image/png;base64,${imageData.b64_json}`;
 
         try {
-            // Incrementar contador en TiDB
-            await pool.query(`
-                INSERT INTO user_generations (ip_address, generation_count) 
-                VALUES (?, 1) 
-                ON DUPLICATE KEY UPDATE generation_count = generation_count + 1
-            `, [ip]);
+            if (shouldReset) {
+                // Reiniciar el contador porque ya pasaron más de 24 horas
+                await pool.query(`
+                    UPDATE user_generations 
+                    SET generation_count = 1 
+                    WHERE ip_address = ?
+                `, [ip]);
+            } else {
+                // Incrementar contador en TiDB
+                await pool.query(`
+                    INSERT INTO user_generations (ip_address, generation_count) 
+                    VALUES (?, 1) 
+                    ON DUPLICATE KEY UPDATE generation_count = generation_count + 1
+                `, [ip]);
+            }
         } catch (dbError) {
             console.error("Error al actualizar limite en TiDB:", dbError);
         }
