@@ -116,17 +116,24 @@ window.addEventListener("DOMContentLoaded", () => {
                 // Mostrar botón de descarga y asignar evento
                 if (downloadBtn) {
                     downloadBtn.style.display = "flex";
-                    downloadBtn.onclick = async () => {
+                    downloadBtn.onclick = () => {
                         try {
-                            const response = await fetch(data.image);
-                            const blob = await response.blob();
                             const link = document.createElement("a");
-                            link.href = URL.createObjectURL(blob);
+                            // Evitamos el CSP de Helmet y el Fetch API inyectando el string Base64 directamente
+                            link.href = data.image; 
                             link.download = `avatar-${category}-${Date.now()}.png`;
                             document.body.appendChild(link);
                             link.click();
                             document.body.removeChild(link);
-                            URL.revokeObjectURL(link.href);
+                            
+                            // Mostrar el popup de éxito (Toast)
+                            const toast = document.getElementById("toast");
+                            if (toast) {
+                                toast.classList.add("show");
+                                setTimeout(() => {
+                                    toast.classList.remove("show");
+                                }, 3000);
+                            }
                         } catch (error) {
                             console.error("Error al descargar:", error);
                             alert("Hubo un error al intentar descargar la imagen.");
