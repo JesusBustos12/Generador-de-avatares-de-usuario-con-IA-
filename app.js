@@ -55,7 +55,7 @@ app.use(express.urlencoded({
 app.post("/api/migrate-local-storage", async (req, res) => {
     const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const { count } = req.body;
-    
+
     if (count !== undefined && !isNaN(parseInt(count))) {
         try {
             await pool.query(`
@@ -83,7 +83,7 @@ app.get("/api/limit-status", async (req, res) => {
             const lastUpdated = new Date(rows[0].updated_at);
             const now = new Date();
             const hoursDiff = Math.abs(now - lastUpdated) / 36e5; // Diferencia en horas
-            
+
             if (hoursDiff >= 24) {
                 // Han pasado 24 horas desde la última generación, se reinicia virtualmente
                 count = 0;
@@ -100,10 +100,10 @@ app.get("/api/limit-status", async (req, res) => {
 
 //Peticion post:
 //Peticion post protegida con rate limit en memoria
-app.post("/api/gen-img", limiter, async(req, res) => {
+app.post("/api/gen-img", limiter, async (req, res) => {
 
     const apiKey = process.env.OPENAI_API_KEY;
-    const {category} = req.body;
+    const { category } = req.body;
     const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
     // Validación estricta de inputs por seguridad
@@ -117,12 +117,12 @@ app.post("/api/gen-img", limiter, async(req, res) => {
         // Verificar limite en la base de datos
         const [rows] = await pool.query('SELECT generation_count, updated_at FROM user_generations WHERE ip_address = ?', [ip]);
         let currentCount = 0;
-        
+
         if (rows.length > 0) {
             const lastUpdated = new Date(rows[0].updated_at);
             const now = new Date();
             const hoursDiff = Math.abs(now - lastUpdated) / 36e5;
-            
+
             if (hoursDiff >= 24) {
                 currentCount = 0;
                 shouldReset = true;
@@ -139,18 +139,46 @@ app.post("/api/gen-img", limiter, async(req, res) => {
         return res.status(500).json({ error: "Error interno del servidor al verificar límites." });
     }
 
+    // Generador de características aleatorias para asegurar diversidad
+    const hairColors = ["rubio", "castaño", "negro", "pelirrojo", "blanco", "plateado", "azul oscuro", "rosa pastel"];
+    const eyeColors = ["azules", "verdes", "marrones", "avellana", "grises", "ámbar", "violetas"];
+    const skinTones = ["tez clara", "tez morena", "tez pálida", "tez bronceada"];
+    const expressions = ["con una sonrisa amable", "con mirada serena", "con expresión alegre", "con actitud heroica", "con una sonrisa pícara", "con mirada cautivadora"];
+    const genders = ["masculino", "femenino"];
+
+    const randomHair = hairColors[Math.floor(Math.random() * hairColors.length)];
+    const randomEyes = eyeColors[Math.floor(Math.random() * eyeColors.length)];
+    const randomSkin = skinTones[Math.floor(Math.random() * skinTones.length)];
+    const randomExpression = expressions[Math.floor(Math.random() * expressions.length)];
+
+    let specificTraits = `cabello ${randomHair}, ojos ${randomEyes}, ${randomSkin}, y ${randomExpression}`;
+
+    // Adaptaciones especiales dependiendo de la categoría general
+    const catLower = category?.toLowerCase();
+    if (catLower === "animal") {
+        const animalTypes = ["perro místico", "gato elegante", "zorro astuto", "búho sabio", "panda juguetón", "lobo salvaje", "tigre fiero", "león majestuoso"];
+        const randomAnimal = animalTypes[Math.floor(Math.random() * animalTypes.length)];
+        specificTraits = `especie: ${randomAnimal}, con pelaje o rasgos muy detallados, y ${randomExpression}`;
+    } else if (catLower === "niño" || catLower === "anciano") {
+        const randomGender = genders[Math.floor(Math.random() * genders.length)];
+        specificTraits = `de género ${randomGender}, ${specificTraits}`;
+    }
+
     const context = `
         Eres un experto profesional en ilustración digital, diseño de retratos y caricaturas.
         Tu deber es crear un avatar impresionante de un/una ${category}.
         
-        Especificaciones obligatorias:
+        Para garantizar la originalidad y variedad, debes incorporar estrictamente las siguientes características físicas en el diseño:
+        - Rasgos obligatorios: ${specificTraits}.
+        
+        Especificaciones de estilo y encuadre:
         - Estilos permitidos: "Anime de alta calidad", "Retrato digital moderno", "Estilo Cartoon Premium", o "Arte Conceptual de Videojuegos".
         - El avatar debe ser un retrato centrado en el rostro y hombros.
         - Composición limpia, colores vibrantes y acabado hiper-detallado.
         - Importante: No sobreponer texto ni otras imágenes. Solo un personaje principal con fondo sutil.
     `;
 
-    try{
+    try {
         // Usamos gpt-image-1-mini (el modelo económico actual de OpenAI para imágenes)
         const endPoint = await axios.post("https://api.openai.com/v1/images/generations", {
             model: "gpt-image-1-mini",
@@ -192,7 +220,7 @@ app.post("/api/gen-img", limiter, async(req, res) => {
             image: imageUrl
         });
 
-    }catch(exception){
+    } catch (exception) {
         console.error("Error OpenAI:", exception.response ? exception.response.data : exception.message);
         return res.status(500).json({
             error: "Error al generar la imagen. Por favor intenta de nuevo más tarde."
