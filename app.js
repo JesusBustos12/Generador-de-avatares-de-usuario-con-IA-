@@ -153,11 +153,10 @@ app.post("/api/gen-img", limiter, async(req, res) => {
     try{
         // Usamos gpt-image-1 (el modelo actual de OpenAI para imágenes)
         const endPoint = await axios.post("https://api.openai.com/v1/images/generations", {
-            model: "gpt-image-1",
+            model: "dall-e-3",
             prompt: context,
             n: 1,
-            size: "1024x1024",
-            response_format: "b64_json"
+            size: "1024x1024"
         }, {
             headers: {
                 "Content-Type": "application/json",
